@@ -1,8 +1,10 @@
 import os
+from functools import lru_cache
 
 import pandas as pd
 
 from ensalada import DATA_PATH, RATS, SESSION_TYPES
+
 
 class Session:
     
@@ -11,7 +13,10 @@ class Session:
         assert rat in RATS, "Invalid rat name!"
         assert session_type in SESSION_TYPES, "Invalid session type!"
         
-        self.data_path = os.path.join(DATA_PATH, rat, str(session_type) + str(day))
+        self.rat = rat
+        self.session_type = session_type
+        self.day = day
+        self.data_path = os.path.join(DATA_PATH, rat, session_type + str(day))
     
     @property
     def data_path(self):
@@ -46,7 +51,14 @@ class Session:
     def events_file(self):
         return pd.read_hdf(self._events_path)
     
+    @property
+    def num_units(self):
+        return len(self.spikes_file)
     
+    @property
+    def num_trials(self):
+        pass
+
 class Rat(list):
     
     def __init__(self, rat):
