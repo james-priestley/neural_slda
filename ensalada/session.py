@@ -170,7 +170,9 @@ class Session:
 
         return rasters
 
-    def format_online_data(self, exclude_interneurons=True, **raster_kws):
+    def format_online_data(self, exclude_interneurons=True,
+                           restrict_odors=True, restrict_valence=True,
+                           pre=3, post=1.5):
         """
         Parameters
         ----------
@@ -187,12 +189,29 @@ class Session:
             Length of each trial in X, for partitioning
         """
 
-        rasters = self.rasters(**raster_kws)
+        rasters = self.rasters(pre=pre, post=post)
         trial_labels = self.labels()
 
         lengths, y = [], []
         for l, r in zip(*[trial_labels, rasters]):
-            y += [l] * r.shape[1]
+
+            num_pre_bins = pre * self.bin_size
+            num_post_bins = post * self.bin_size
+
+            labels_to_add = [l] * r.shape[1]
+
+            # this is very ugly
+            if restrict_odors:
+                labels_to_add = [l if (i > num_pre_bins) & (i <= num_post_bins)
+                                 else [e for e in l if 'odor' not in e]
+                                 for i, l in enumerate(labels_to_add)]
+
+            if restrict_valence:
+                labels_to_add = [l if (i > num_pre_bins) & (i <= num_post_bins)
+                                 else [e for e in l if 'valence' not in e]
+                                 for i, l in enumerate(labels_to_add)]
+
+            y += labels_to_add
             lengths.append(r.shape[1])
 
         X = np.hstack(rasters).T

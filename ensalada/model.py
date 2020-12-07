@@ -40,7 +40,7 @@ class LabeledLDA(TransformerMixin, BaseEstimator):
     components_ : array, shape (n_components, n_features)
     component_labels_  : array, length (n_components)
         Label for each component
-    convergence_ : array, shape (n_iter)
+    perplexity_ : array, shape (n_iter)
     """
 
     def __init__(self, n_components=1, alpha=0.1, eta=0.01, burn_in=100,
