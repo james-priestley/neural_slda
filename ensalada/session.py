@@ -114,7 +114,19 @@ class Session:
 
     def labels(self):
         "Trial labels dataframe"
-        pass
+        def to_trial_labels(trial):
+            trial_labels = []
+            if trial.baited:
+                trial_labels.append("baited")
+            trial_labels.append(trial.side)
+            trial_labels.append(trial.context)
+            #trial_labels.append(f"position_{trial.position}") # this is redundant with side + context
+            trial_labels.append(f"odor_{trial.odor}")
+            
+            return trial_labels
+
+        trial_labels = self.events_file.apply(to_trial_labels, axis=1)
+        return trial_labels.loc[~self.events_file.exclude & self.events_file.last_sample]
 
     def rasters(self, pre=3, post=1.5):
         """
