@@ -94,22 +94,38 @@ class LabeledLDA(TransformerMixin, BaseEstimator):
 
         return self
 
-    def fit_transform(X, y):
+    def fit_transform(self, X, y=None):
+        """
+        """
 
         pass
 
-    def perplexity(X):
+    def perplexity(self, X):
 
         pass
 
-    def score(X, y):
+    def score(self, X, y):
 
         pass
 
-    def transform(X):
+    def transform(self, X):
+        """
+        Parameters
+        ----------
+        X : array, shape (n_samples, n_features)
+            Array of document word counts
+        """
 
-        pass
+        # convert X into documents for tomoto, then cast as document class
+        docs = _counts_to_str(X.T)
+        tdocs = [self._llda.make_doc(d) for d in docs]
 
-    def predict(X):
+        # infer topic distributions
+        doc_topic_dist, logprob = self._llda.infer(tdocs)
+        doc_topic_dist = np.stack(doc_topic_dist)
+
+        return doc_topic_dist
+
+    def predict(self, X):
 
         pass
