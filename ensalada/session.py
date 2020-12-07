@@ -98,8 +98,6 @@ class Session:
     def detect_interneurons(self):
         pass
 
-
-
     def find_immobile_periods(self, threshold=5):
         "Find when the animal is not moving"
         pass
@@ -112,9 +110,40 @@ class Session:
         "Trial labels dataframe"
         pass
 
-    def rasters(self):
-        "Cells x trials spike count dataframe"
-        pass
+    def rasters(self, pre=3, post=1.5):
+        """
+        Parameters
+        ----------
+        pre, post : float, optional
+            Time in seconds to include before sampling onset and after sampling
+            offset, respectively
+
+        Returns
+        -------
+        rasters : list, length (num_trials)
+            List of trial rasterplots. Each trial can have a different total
+            duration, depending on sampling period length.
+        """
+        def _list_to_hist(s, start, stop):
+            return np.histogram(
+                s[(s > start) & (s < stop)],
+                bins=np.arange(start, stop + 0.1, 0.1))[0]
+
+        spikes = self.spikes_file
+        events = self.events_file
+        events = events[~events.exclude & events.last_sample]
+
+        rasters = []
+        for _, e in events.iterrows():
+
+            start = e.time - pre
+            stop = e.time + e.duration + post
+
+            rasters.append(np.stack(
+                spikes.spikes.apply(lambda s: _list_to_hist(s, start, stop)))
+            )
+
+        return rasters
 
     def format_online_data(self):
         """
