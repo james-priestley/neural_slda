@@ -98,8 +98,15 @@ class Session:
         return velocity.rolling(window=30, min_periods=20,
                                 win_type='gaussian').mean(std=5)
 
-    def detect_interneurons(self):
-        pass
+    def detect_interneurons(self, threshold=10):
+        """
+        Parameters
+        ----------
+        threshold : float, optional
+            Firing rate cutoff for excluding interneurons
+        """
+        mean_fr = (np.hstack(self.rasters()).mean(axis=1) / self.bin_size)
+        return mean_fr > threshold
 
     def find_iti_periods(self, threshold=20, x_cutoff=50, y_cutoff=10):
         """Find when the animal is in the ITI chamber or back of the contexts,
@@ -163,8 +170,13 @@ class Session:
 
         return rasters
 
-    def format_online_data(self):
+    def format_online_data(self, exclude_interneurons=True):
         """
+        Parameters
+        ----------
+        exclude_interneurons : bool, optional
+            Remove high firing rate neurons from the dataset. Defaults to True
+
         Returns
         -------
         X : array (num_samples, num_units)
@@ -184,6 +196,9 @@ class Session:
             lengths.append(r.shape[1])
 
         X = np.hstack(rasters).T
+
+        if exclude_interneurons:
+            X = X[:, ~self.detect_interneurons()]
 
         return X, y, np.array(lengths)
 
