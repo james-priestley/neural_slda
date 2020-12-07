@@ -11,7 +11,7 @@ MAZE_SCALE_FACTOR = 4.2  # pixels per cm
 
 class Session:
 
-    def __init__(self, rat, session_type='CDEF', day=1, bin_size=100):
+    def __init__(self, rat, session_type='CDEF', day=1, bin_size=0.1):
 
         assert rat in RATS, "Invalid rat name!"
         assert session_type in SESSION_TYPES, "Invalid session type!"
@@ -78,9 +78,12 @@ class Session:
             return a / MAZE_SCALE_FACTOR
 
         pos = self.position_file.apply(_center_and_scale, axis=0)
+        pos['y'] = pos['y'].apply(lambda y: y if np.abs(y) < 50 else np.nan)
+
         pos.index = pd.to_datetime(pos.index.values, unit='s')
 
-        return pos.resample(f"{str(self.bin_size)}ms").apply(np.nanmean)
+        return pos.resample(
+            f"{str(int(1000 * self.bin_size))}ms").apply(np.nanmean)
 
     def velocity(self, cutoff=25):
         """Calculate from the derivative of the binned position"""
@@ -89,7 +92,7 @@ class Session:
             [[np.nan], np.linalg.norm(np.diff(pos, axis=0), axis=1)])
         delta_pos[delta_pos > cutoff] = np.nan  # remove outrageous numbers
 
-        velocity = pd.Series(delta_pos / 0.1, index=pos.index)
+        velocity = pd.Series(delta_pos / self.bin_size, index=pos.index)
 
         # should probably make smoothing arguments
         return velocity.rolling(window=30, min_periods=20,
@@ -98,13 +101,16 @@ class Session:
     def detect_interneurons(self):
         pass
 
-    def find_immobile_periods(self, threshold=5):
-        "Find when the animal is not moving"
-        pass
+    def find_iti_periods(self, threshold=20, x_cutoff=50, y_cutoff=10):
+        """Find when the animal is in the ITI chamber or back of the contexts,
+        and moving relatively slowly"""
 
-    def find_iti_periods(self):
-        "Find when the animal is in the ITI chamber"
-        pass
+        pos = self.position()
+        return (
+            (np.abs(pos['x']) < x_cutoff)
+            & (np.abs(pos['y']) < y_cutoff)
+            & (self.velocity() < threshold)
+        )
 
     def labels(self):
         "Trial labels dataframe"
@@ -127,7 +133,7 @@ class Session:
         def _list_to_hist(s, start, stop):
             return np.histogram(
                 s[(s > start) & (s < stop)],
-                bins=np.arange(start, stop + 0.1, 0.1))[0]
+                bins=np.arange(start, stop + self.bin_size, self.bin_size))[0]
 
         spikes = self.spikes_file
         events = self.events_file
@@ -165,7 +171,6 @@ class Session:
         X : array (num_samples, num_units)
             'Flattened' samples matrix, for model fitting.
         y :
-
 
         """
         pass
