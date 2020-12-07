@@ -122,7 +122,7 @@ class Session:
     def labels(self):
         "List of lists, containing string labels for each trial"
         events = self.events_file
-        events = events[~events.exclude & events.last_sample]
+        events = events[~events.exclude & events.last_sample & events.correct]
 
         trial_labels = []
         for _, e in events.iterrows():
@@ -156,7 +156,7 @@ class Session:
 
         spikes = self.spikes_file
         events = self.events_file
-        events = events[~events.exclude & events.last_sample]
+        events = events[~events.exclude & events.last_sample & events.correct]
 
         rasters = []
         for _, e in events.iterrows():
@@ -170,7 +170,7 @@ class Session:
 
         return rasters
 
-    def format_online_data(self, exclude_interneurons=True):
+    def format_online_data(self, exclude_interneurons=True, **raster_kws):
         """
         Parameters
         ----------
@@ -187,7 +187,7 @@ class Session:
             Length of each trial in X, for partitioning
         """
 
-        rasters = self.rasters()
+        rasters = self.rasters(**raster_kws)
         trial_labels = self.labels()
 
         lengths, y = [], []

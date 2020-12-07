@@ -142,7 +142,7 @@ class LabeledLDA(TransformerMixin, BaseEstimator):
 
         silent_bins = np.where(X.sum(axis=1) == 0)[0]
         if len(silent_bins):
-            indices = silent_bins - np.arange(silent_bins)
+            indices = silent_bins - np.arange(len(silent_bins))
             doc_topic_dist = np.insert(doc_topic_dist, indices, np.nan, axis=0)
             logprob = np.insert(logprob, indices, np.nan)
 
