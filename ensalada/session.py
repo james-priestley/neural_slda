@@ -72,7 +72,7 @@ class Session:
     def num_trials(self):
         pass
 
-    def position(self, bin_size=100):
+    def position(self):
         def _center_and_scale(a):
             a = a - np.mean([np.nanpercentile(a, p) for p in [5, 95]])
             return a / MAZE_SCALE_FACTOR
@@ -82,11 +82,18 @@ class Session:
 
         return pos.resample(f"{str(self.bin_size)}ms").apply(np.nanmean)
 
-    def velocity(self):
+    def velocity(self, cutoff=25):
         """Calculate from the derivative of the binned position"""
         pos = self.position()
+        delta_pos = np.concatenate(
+            [[np.nan], np.linalg.norm(np.diff(pos, axis=0), axis=1)])
+        delta_pos[delta_pos > cutoff] = np.nan  # remove outrageous numbers
 
-        pass
+        velocity = pd.Series(delta_pos / 0.1, index=pos.index)
+
+        # should probably make smoothing arguments
+        return velocity.rolling(window=30, min_periods=20,
+                                win_type='gaussian').mean(std=5)
 
     def detect_interneurons(self):
         pass
