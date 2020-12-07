@@ -1,6 +1,7 @@
 import os
 # from functools import lru_cache
 
+import numpy as np
 import pandas as pd
 
 from ensalada import DATA_PATH, RATS, SESSION_TYPES
@@ -72,12 +73,18 @@ class Session:
         pass
 
     def position(self, bin_size=100):
-        # Center maze and apply scale factor
-        pass
+        def _center_and_scale(a):
+            a = a - np.mean([np.nanpercentile(a, p) for p in [5, 95]])
+            return a / MAZE_SCALE_FACTOR
+
+        pos = self.position_file.apply(_center_and_scale, axis=0)
+        pos.index = pd.to_datetime(pos.index.values, unit='s')
+
+        return pos.resample(f"{str(self.bin_size)}ms").apply(np.nanmean)
 
     def velocity(self):
         """Calculate from the derivative of the binned position"""
-        position = self.position()
+        pos = self.position()
 
         pass
 
