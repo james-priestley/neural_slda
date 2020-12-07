@@ -38,7 +38,7 @@ class LabeledLDA(TransformerMixin, BaseEstimator):
     Attributes
     ----------
     components_ : array, shape (n_components, n_features)
-    component_labels_  : list, length (n_components)
+    component_labels_  : array, length (n_components)
         Label for each component
     convergence_ : array, shape (n_iter)
     """
@@ -63,6 +63,10 @@ class LabeledLDA(TransformerMixin, BaseEstimator):
             Array of document word counts
         y : list, length (n_samples)
             For each document, the list of labels
+
+        Returns
+        -------
+        self
         """
 
         # convert X into documents for tomoto
@@ -90,32 +94,44 @@ class LabeledLDA(TransformerMixin, BaseEstimator):
             [self._llda.get_topic_word_dist(k)
              for k in range(self._llda.k)])
         self.n_components = self._llda.k
-        self.component_labels_ = list(self._llda.topic_label_dict)
+        self.component_labels_ = np.array(self._llda.topic_label_dict)
 
         return self
 
-    def fit_transform(self, X, y=None):
-        """
-        """
-
-        pass
-
-    def perplexity(self, X):
-
-        pass
-
-    def score(self, X, y):
-
-        pass
-
-    def transform(self, X):
+    def fit_transform(self, X, y):
         """
         Parameters
         ----------
         X : array, shape (n_samples, n_features)
             Array of document word counts
-        """
+        y : list, length (n_samples)
+            For each document, the list of labels
 
+        Returns
+        -------
+        doc_topic_dist : array, shape (n_samples, n_components)
+            Inferred topic distribution for each sample
+        """
+        return self.fit(X, y).transform(X)
+
+    def perplexity(self, X):
+
+        pass
+
+    def score(self, X):
+        """
+        Parameters
+        ----------
+        X : array, shape (n_samples, n_features)
+            Array of document word counts
+
+        Returns
+        -------
+        logprob : array, shape (n_samples,)
+        """
+        return self._infer_topics(X)[1]
+
+    def _infer_topics(self, X):
         # convert X into documents for tomoto, then cast as document class
         docs = _counts_to_str(X.T)
         tdocs = [self._llda.make_doc(d) for d in docs]
@@ -124,8 +140,34 @@ class LabeledLDA(TransformerMixin, BaseEstimator):
         doc_topic_dist, logprob = self._llda.infer(tdocs)
         doc_topic_dist = np.stack(doc_topic_dist)
 
-        return doc_topic_dist
+        return doc_topic_dist, logprob
 
-    def predict(self, X):
+    def transform(self, X):
+        """
+        Parameters
+        ----------
+        X : array, shape (n_samples, n_features)
+            Array of document word counts
 
-        pass
+        Returns
+        -------
+        doc_topic_dist : array, shape (n_samples, n_components)
+            Inferred topic distribution for each sample
+        """
+        return self._infer_topics(X)[0]
+
+    def predict(self, X, threshold=0.1):
+        """This should predict the labels of each document by thresholding
+        the posterior topic distributions.
+
+        I suppose we could also create a null distribution somehow to threshold
+        topic probabilities, maybe by just simulating the mean rate of each
+        neuron.
+        """
+
+        y_hat = []
+        doc_topic_dist = self.transform(X)
+        for d in doc_topic_dist > 0.1:
+            y_hat.append(self.component_labels_[d])
+
+        return y_hat
