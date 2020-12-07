@@ -140,6 +140,12 @@ class LabeledLDA(TransformerMixin, BaseEstimator):
         doc_topic_dist, logprob = self._llda.infer(tdocs)
         doc_topic_dist = np.stack(doc_topic_dist)
 
+        silent_bins = np.where(X.sum(axis=1) == 0)[0]
+        if len(silent_bins):
+            indices = silent_bins - np.arange(silent_bins)
+            doc_topic_dist = np.insert(doc_topic_dist, indices, np.nan, axis=0)
+            logprob = np.insert(logprob, indices, np.nan)
+
         return doc_topic_dist, logprob
 
     def transform(self, X):
