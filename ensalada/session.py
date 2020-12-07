@@ -113,8 +113,20 @@ class Session:
         )
 
     def labels(self):
-        "Trial labels dataframe"
-        pass
+        "List of lists, containing string labels for each trial"
+        events = self.events_file
+        events = events[~events.exclude & events.last_sample]
+
+        trial_labels = []
+        for _, e in events.iterrows():
+            t = []
+            t.append('valence_positive' if e.baited else 'valence_negative')
+            t.append(f"position_{e.position}")
+            t.append(f"context_{e.context}")
+            t.append(f"odor_{e.odor}")
+            trial_labels.append(t)
+
+        return trial_labels
 
     def rasters(self, pre=3, post=1.5):
         """
@@ -157,12 +169,23 @@ class Session:
         -------
         X : array (num_samples, num_units)
             'Flattened' samples matrix, for model fitting.
-        y : array (num_samples, num_labels)
-            Indicator variables for each label
-        t : array (num_samples,)
-            Integer trial number for each sample
+        y : list of lists, length (num_samples)
+            List containing a label list for each sample
+        lengths : array, length (num_trials)
+            Length of each trial in X, for partitioning
         """
-        pass
+
+        rasters = self.rasters()
+        trial_labels = self.labels()
+
+        lengths, y = [], []
+        for l, r in zip(*[trial_labels, rasters]):
+            y += [l] * r.shape[1]
+            lengths.append(r.shape[1])
+
+        X = np.hstack(rasters).T
+
+        return X, y, np.array(lengths)
 
     def format_offline_data(self):
         """
