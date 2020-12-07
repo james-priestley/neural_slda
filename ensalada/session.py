@@ -195,19 +195,19 @@ class Session:
         lengths, y = [], []
         for l, r in zip(*[trial_labels, rasters]):
 
-            num_pre_bins = pre * self.bin_size
-            num_post_bins = post * self.bin_size
+            num_pre_bins = pre / self.bin_size
+            num_post_bins = post / self.bin_size
 
             labels_to_add = [l] * r.shape[1]
 
             # this is very ugly
             if restrict_odors:
-                labels_to_add = [l if (i > num_pre_bins) & (i <= num_post_bins)
+                labels_to_add = [l if (i > num_pre_bins) & (i <= r.shape[1] - num_post_bins)
                                  else [e for e in l if 'odor' not in e]
                                  for i, l in enumerate(labels_to_add)]
 
             if restrict_valence:
-                labels_to_add = [l if (i > num_pre_bins) & (i <= num_post_bins)
+                labels_to_add = [l if (i > num_pre_bins) & (i <= r.shape[1] - num_post_bins)
                                  else [e for e in l if 'valence' not in e]
                                  for i, l in enumerate(labels_to_add)]
 
