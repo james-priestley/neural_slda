@@ -171,7 +171,7 @@ class Session:
         return rasters
 
     def format_online_data(self, exclude_interneurons=True,
-                           restrict_odors=True, restrict_valence=True,
+                           restrict_odors=False, restrict_valence=False,
                            pre=3, post=1.5):
         """
         Parameters
