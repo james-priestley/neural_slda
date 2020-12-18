@@ -108,7 +108,7 @@ class Session:
         mean_fr = (np.hstack(self.rasters()).mean(axis=1) / self.bin_size)
         return mean_fr > threshold
 
-    def find_iti_periods(self, threshold=20, x_cutoff=50, y_cutoff=10):
+    def find_iti_periods(self, threshold=20, x_cutoff=50, y_cutoff=50):
         """Find when the animal is in the ITI chamber or back of the contexts,
         and moving relatively slowly"""
 
@@ -221,7 +221,7 @@ class Session:
 
         return X, y, np.array(lengths)
 
-    def format_offline_data(self):
+    def format_offline_data(self, exclude_interneurons=True):
         """
         Returns
         -------
@@ -230,8 +230,24 @@ class Session:
         y :
 
         """
-        pass
+        iti_filter = self.find_iti_periods()
+        total_time = np.round(len(iti_filter) * self.bin_size, 3)
 
+        def _list_to_hist(s, start, stop):
+            return np.histogram(
+                s[(s > start) & (s < stop)],
+                bins=np.arange(start, stop + self.bin_size, self.bin_size))[0]
+        
+        X = self.spikes_file.spikes.apply(
+            lambda s: _list_to_hist(s, 0, total_time)
+        )
+        X = np.stack(X).T
+        
+        if exclude_interneurons:
+            X = X[:, ~self.detect_interneurons()]
+        
+        return X[iti_filter.values]
+        
 
 class Rat(list):
 
